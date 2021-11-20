@@ -112,25 +112,26 @@ homicide_df %>%
 Create a tidy dataframe containing data from all participants
 ```{r}
 study_df = 
+# a dataframe containing all file names
   tibble(
     files = list.files(path = "data", pattern = ".csv", full.names = FALSE)
     ) %>%
   mutate(
-    data = map(files, ~read.csv(str_c("data/", .x)))) %>% 
-  unnest(data) %>%
+    data = map(files, ~read.csv(str_c("data/", .x)))) %>% #iterate over file names
+  unnest(data) %>% 
 
 # clean data
   janitor::clean_names() %>% 
-  separate(files, c('group', 'subject_id'), "_") %>%
+  separate(files, c('arm', 'subject_id'), "_") %>% #separate file names into arm and subject ID
   pivot_longer(
     week_1 : week_8,
     names_to = "week",
     names_prefix = "week_",
     values_to = "observation"
-  ) %>%
+  ) %>% #weekly observations are “tidy”
   mutate(
-    group = recode(group, "con" = "Control", "exp" = "Experiment"),
-    subject_id = str_replace(subject_id, "\\.csv", "")
+    arm = recode(arm, "con" = "Control", "exp" = "Experiment"),
+    subject_id = str_replace(subject_id, "\\.csv", "") #looks nicer
     )
 
 study_df
@@ -146,14 +147,14 @@ study_df %>%
          ) + 
   geom_point() +
   geom_line() +
-  facet_grid( ~ group) +
+  facet_grid( ~ arm) +
   labs(
     title = "Observations on each subject over time",
     x = "Week",
     y = "Observation"
   ) 
 ```
-
+From the spaghetti plot, we can see the observation value in control arm are stay same(not obviously increasing or decreasing) in 8 weeks, the observation value in experiment arm are increasing over time.
 
 ## Problem 3
 
