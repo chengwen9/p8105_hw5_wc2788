@@ -129,9 +129,9 @@ study_df =
     values_to = "observation"
   ) %>%
   mutate(
-    group = recode(group, "con" = "Control", "exp" = "Experiment")
-  )
-
+    group = recode(group, "con" = "Control", "exp" = "Experiment"),
+    subject_id = str_replace(subject_id, "\\.csv", "")
+    )
 
 study_df
 ```
