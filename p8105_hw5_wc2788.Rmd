@@ -8,6 +8,108 @@ output: github_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(readr)
 ```
 
 ## Problem 1
+Import and clean data
+```{r}
+homicide_df = read.csv("homicide-data.csv", na = c("","Unknown")) %>%
+  mutate(city_state = str_c(city, state), #create a city_state variable
+         resolution = case_when(
+           disposition == "Closed without arrest" ~ "unsolved",
+           disposition == "Open/No arrest" ~ "unsolved",
+           disposition == "Closed by arrest" ~ "solved" #classify solved and unsolved
+         )) %>%
+  relocate(city_state) %>%
+  filter(city_state != "TulsaAL")
+```
+
+For city Baltimore, MD
+```{r}
+baltimore_df = homicide_df %>%
+  filter(city_state == "BaltimoreMD")
+
+baltimore_summary = 
+  baltimore_df %>%
+  summarize(unsolved = sum(resolution == "unsolved"),
+            n = n())
+
+baltimore_test = 
+  prop.test(x = baltimore_summary %>% pull(unsolved),
+            n = baltimore_summary %>% pull(n))
+
+baltimore_test %>%
+  broom::tidy()
+```
+
+Run prop.test for each of the cities in the dataset
+```{r}
+prop_test_function = function(city_df) {
+  
+  city_summary = 
+  city_df %>%
+  summarize(unsolved = sum(resolution == "unsolved"),
+            n = n())
+
+  city_test = 
+    prop.test(x = city_summary %>% pull(unsolved),
+              n = city_summary %>% pull(n))
+
+  return(city_test)
+  
+}
+
+homicide_df %>%
+  filter(city_state == "AlbuquerqueNM") %>%
+  prop_test_function()
+```
+
+```{r}
+results_df = 
+  homicide_df %>%
+  nest(data = uid:resolution) %>%
+  mutate(
+    test_results = map(data, prop_test_function),
+    tidy_results = map(test_results, broom::tidy)
+  ) %>%
+  select(city_state, tidy_results) %>%
+  unnest(tidy_results) %>%
+  select(city_state, estimate, starts_with("conf"))
+
+results_df
+```
+
+create a plot showing estimates and confidence intervals
+```{r}
+results_df %>%
+  mutate(city_state = fct_reorder(city_state, estimate)) %>%
+  ggplot(aes(x = city_state, y = estimate)) +
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+  
+```
+
+```{r}
+homicide_df %>%
+  group_by(city_state) %>%
+  summarize(
+    unsolved = sum(resolution == "unsolved"),
+    n = n()
+  ) %>%
+  mutate(
+    test_results = map2(unsolved, n, prop.test),
+    tidy_results = map(test_results, broom::tidy)
+  ) %>%
+  select(city_state, tidy_results) %>%
+  unnest(tidy_results) %>%
+  select(city_state, estimate, starts_with("conf"))
+```
+
+## Problem 2
+
+```{r}
+```
+
+## Problem 3
