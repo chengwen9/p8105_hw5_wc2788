@@ -171,12 +171,12 @@ Write a function replaces missing values
 ```{r}
 fill = function(x){
   if(is.numeric(x)){
-    x = replace_na(x, mean(x, na.rm = TRUE))
-  }
+    x = replace_na(x, signif(mean(x, na.rm = TRUE), 2)) #round to 2 digit
+  } #for numeric variables, fill in missing values with the mean of non-missing values
   if(is.character(x)){
     x = replace_na(x, "virginica")
-  }
-  return(x)
+  } #for character variables, fill in missing values with "virginica"
+  return(x) #returns the resulting vector
 }
 ```
 
